@@ -123,11 +123,10 @@ const servers = ExpressHttpStreamableMcpServer(
         api_key: 'df098403a723433a0f8f65c1f7f5f2a991aad3c7049fa86e483bab0c6a2f7e64',
         engine: 'google_trends',
         data_type: 'RELATED_QUERIES',
-        date: 'now+1-d',
         hl:'en',
         q,
         geo: 'US'
-    } as any
+    }
 
     if (location) params.geo = location;
 
