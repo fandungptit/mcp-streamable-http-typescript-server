@@ -90,4 +90,93 @@ const servers = ExpressHttpStreamableMcpServer(
         };
       }
     );
+
+    server.tool("search-intent", "Get search intent for keyword", {
+    keyword: z.string().describe("Keyword for search intent"),
+}, async ({ keyword }) => {
+    let params = {
+        api_key: 'e4fe06533c646e3864aecf4f59cba2dd',
+        query: keyword,
+        ultra_premium: true,
+    }
+
+    const url = `https://api.scraperapi.com/structured/google/search?${stringify(params)}`
+    const data = await makeRequest(url)
+    const { organic_results } = data
+
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(organic_results, null, 2),
+            },
+        ],
+    };
+  });
+  server.tool("search-trending", "Get google search trending for a keyword", {
+    q: z.string().describe("Keyword for search treding"),
+    location: z.string().optional().describe("Location for the search"),
+    date: z.string().optional().describe("Search engine to use")
+    }, async ({ q, date, location }) => {
+    let params = {
+        api_key: 'df098403a723433a0f8f65c1f7f5f2a991aad3c7049fa86e483bab0c6a2f7e64',
+        engine: 'google_trends',
+        data_type: 'RELATED_QUERIES',
+        date: 'now+1-d',
+        hl:'en',
+        q,
+        geo: 'US'
+    } as any
+
+    if (location) params.geo = location;
+
+    try {
+        const url = `https://serpapi.com/search?${stringify(params)}`
+        const data = await makeRequest(url)
+
+        const rising = data?.related_queries?.rising;
+
+        if (rising) {
+            const results = rising.map((result: any) => ({
+                query: result.query || "No query",
+                value: result.value || "No value",
+                extracted_value: result.extracted_value || "No extracted_value"
+            }));
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text:  JSON.stringify(results)
+                    },
+                ],
+            };
+        }
+
+        return {
+            content: [{ type: "text", text: "no data found." }]
+        };
+    } catch (e: any) {
+        return {
+            content: [{ type: "text", text: `Error: ${e.message}` }]
+        };
+    }
+
+  });
+  async function makeRequest(url: string) {
+    const headers = {
+        Accept: "application/json",
+    };
+    try {
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return (await response.json());
+    }
+    catch (error) {
+        console.error("Error making NWS request:", error);
+        return null;
+    }
+  }
 })
